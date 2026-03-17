@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MuscleVerse — The Future of Muscles</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap');
+
+:root {
+  --cyan: #00f0ff;
+  --pink: #ff2070;
+  --purple: #8b00ff;
+  --dark: #03070f;
+  --glow-c: 0 0 30px rgba(0,240,255,.7), 0 0 80px rgba(0,240,255,.25);
+  --glow-p: 0 0 30px rgba(255,32,112,.7), 0 0 80px rgba(255,32,112,.25);
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+html, body {
+  width:100%; height:100%;
+  overflow:hidden;
+  background: var(--dark);
+  font-family: 'Rajdhani', sans-serif;
+  cursor: none;
+}
+
+/* ── CUSTOM CURSOR ── */
+#cursor {
+  position:fixed; width:12px; height:12px;
+  border:2px solid var(--cyan); border-radius:50%;
+  pointer-events:none; z-index:99999;
+  transform:translate(-50%,-50%);
+  transition: width .2s, height .2s, background .2s;
+  mix-blend-mode: screen;
+}
+#cursor-trail {
+  position:fixed; width:40px; height:40px;
+  border:1px solid rgba(0,240,255,.25); border-radius:50%;
+  pointer-events:none; z-index:99998;
+  transform:translate(-50%,-50%);
+  transition: left .08s ease, top .08s ease;
+}
+body:hover #cursor { background:rgba(0,240,255,.15); }
+
+/* ── GLOBAL CANVAS LAYER ── */
+#three-canvas {
+  position:fixed; inset:0;
+  z-index:1;
+  pointer-events:none;
+}
+
+/* ── SLIDES ── */
+#deck { position:fixed; inset:0; z-index:2; }
+
+.slide {
+  position:absolute; inset:0;
+  opacity:0; pointer-events:none;
+  display:flex;
+  transition: opacity .08s;
+}
+.slide.active { opacity:1; pointer-events:all; }
+
+/* ── TRANSITION OVERLAY ── */
+#transition-overlay {
+  position:fixed; inset:0; z-index:500;
+  background: var(--dark);
+  clip-path: circle(0% at 50% 50%);
+  pointer-events:none;
+}
+.transitioning #transition-overlay {
+  animation: rippleIn .5s cubic-bezier(.77,0,.18,1) forwards;
+}
+.transitioning-out #transition-overlay {
+  animation: rippleOut .5s cubic-bezier(.77,0,.18,1) forwards;
+}
+@keyframes rippleIn  { to { clip-path: circle(150% at 50% 50%); } }
+@keyframes rippleOut { from { clip-path: circle(150% at 50% 50%); } to { clip-path: circle(0% at 50% 50%); } }
+
+/* ── NEON UI CHROME ── */
+.neon-corner {
+  position:absolute; z-index:50; pointer-events:none;
+}
+.neon-corner.tl { top:20px; left:20px; }
+.neon-corner.br { bottom:20px; right:20px; transform:rotate(180deg); }
+.neon-corner svg line { stroke: var(--cyan); stroke-width:1.5; opacity:.7; }
+
+.slide-counter {
+  position:fixed; bottom:22px; right:28px;
+  font-family:'Share Tech Mono',monospace;
+  font-size:11px; letter-spacing:4px;
+  color:rgba(0,240,255,.5);
+  z-index:200;
+}
+
+.tap-hint {
+  position:fixed; bottom:22px; left:50%; transform:translateX(-50%);
+  font-family:'Share Tech Mono',monospace;
+  font-size:10px; letter-spacing:5px; color:rgba(0,240,255,.3);
+  z-index:200; animation: blink 2.5s infinite;
+}
+@keyframes blink { 0%,100%{opacity:.2} 50%{opacity:.6} }
+
+/* ── PROGRESS BAR ── */
+#progress {
+  position:fixed; top:0; left:0; height:2px;
+  background: linear-gradient(90deg, var(--cyan), var(--purple), var(--pink));
+  z-index:300; transition:width .4s ease;
+  box-shadow: var(--glow-c);
+}
+
+/* ── NAV PILLS ── */
+.nav-pills {
+  position:absolute; top:28px; left:50%;
+  transform:translateX(-50%);
+  display:flex; gap:8px; z-index:50;
+}
+.nav-pill {
+  font-family:'Orbitron',monospace;
+  font-size:9px; letter-spacing:3px;
+  padding:5px 14px;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:20px;
+  color:rgba(255,255,255,.35);
+  text-transform:uppercase;
+  transition:all .3s;
+}
+.nav-pill.active {
+  border-color:var(--cyan);
+  color:var(--cyan);
+  box-shadow: 0 0 10px rgba(0,240,255,.3);
+  background:rgba(0,240,255,.06);
+}
+
+/* ── SECTION LABEL ── */
+.section-label {
+  position:absolute; top:28px; left:36px;
+  font-family:'Share Tech Mono',monospace;
+  font-size:10px; letter-spacing:5px;
+  color:rgba(255,32,112,.6); z-index:50;
+  text-transform:uppercase;
+}
+
+/* ─────────────────────────────────────────
+   SLIDE LAYOUTS
+───────────────────────────────────────── */
+
+/* S1 — HERO */
+#s1 { align-items:center; justify-content:flex-end; }
+#s1 .hero-block {
+  position:relative; z-index:10;
+  max-width:52%; padding-right:6%;
+  text-align:right;
+}
+.hero-eyebrow {
+  font-family:'Share Tech Mono',monospace;
+  font-size:11px; letter-spacing:6px;
+  color:var(--cyan); opacity:.7;
+  margin-bottom:16px;
+  animation: fadeUp .6s .3s both;
+}
+.hero-h1 {
+  font-family:'Orbitron',monospace;
+  font-size:clamp(56px,7.5vw,108px);
+  font-weight:900; line-height:.92;
+  color:#fff;
+  text-transform:uppercase;
+  letter-spacing:-2px;
+  animation: fadeUp .7s .1s both;
+}
+.hero-h1 span { color:var(--cyan); display:block; }
+.hero-pill {
+  display:inline-block; margin-top:28px;
+  border:1.5px solid rgba(0,240,255,.5);
+  border-radius:40px; padding:10px 28px;
+  font-family:'Orbitron',monospace;
+  font-size:10px; letter-spacing:4px;
+  color:var(--cyan); text-transform:uppercase;
+  box-shadow:var(--glow-c);
+  animation: fadeUp .6s .6s both;
+}
+@keyframes fadeUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:none} }
+
+/* S2 — INTRO */
+#s2 .right-block {
+  position:absolute; right:5%; top:50%;
+  transform:translateY(-50%);
+  max-width:44%; z-index:10;
+}
+.slide-h2 {
+  font-family:'Orbitron',monospace;
+  font-size:clamp(26px,3.8vw,52px);
+  font-weight:900; color:#fff;
+  text-transform:uppercase; line-height:1.05;
+  letter-spacing:1px; margin-bottom:20px;
+}
+.slide-body {
+  font-size:15px; line-height:1.8;
+  color:rgba(255,255,255,.5);
+  font-weight:400;
+}
+.divider {
+  width:48px; height:2px;
+  background:linear-gradient(90deg,var(--cyan),transparent);
+  margin:16px 0;
+}
+
+/* S3 — TYPES */
+#s3 { flex-direction:column; align-items:center; justify-content:center; }
+#s3 .s3-title {
+  font-family:'Orbitron',monospace;
+  font-size:clamp(30px,4vw,54px);
+  font-weight:900; color:#fff;
+  letter-spacing:5px; text-transform:uppercase;
+  margin-bottom:52px; z-index:10; position:relative;
+}
+#s3 .cards-row {
+  display:flex; gap:28px; z-index:10; position:relative;
+}
+.type-card {
+  width:260px;
+  border:1px solid rgba(0,240,255,.18);
+  border-radius:8px;
+  background:rgba(0,240,255,.03);
+  backdrop-filter:blur(12px);
+  overflow:hidden;
+  opacity:0; transform:translateY(40px) scale(.97);
+  transition:all .6s cubic-bezier(.34,1.56,.64,1);
+  cursor:pointer;
+}
+.type-card.show { opacity:1; transform:none; }
+.type-card:hover {
+  border-color:rgba(0,240,255,.5);
+  box-shadow:var(--glow-c);
+  transform:translateY(-6px) scale(1.02);
+}
+.type-card .card-viewer {
+  width:100%; height:200px; position:relative;
+  overflow:hidden;
+}
+.type-card .card-viewer canvas { width:100%!important; height:100%!important; }
+.card-body { padding:20px; }
+.card-tag {
+  font-family:'Share Tech Mono',monospace;
+  font-size:9px; letter-spacing:4px;
+  color:var(--pink); text-transform:uppercase;
+  margin-bottom:6px;
+}
+.card-name {
+  font-family:'Orbitron',monospace;
+  font-size:16px; font-weight:700;
+  color:#fff; letter-spacing:2px;
+  text-transform:uppercase; margin-bottom:6px;
+}
+.card-desc { font-size:13px; color:rgba(255,255,255,.45); line-height:1.5; }
+
+/* S4 — STRUCTURE */
+#s4 .left-block {
+  position:absolute; left:5%; top:50%;
+  transform:translateY(-50%);
+  max-width:40%; z-index:10;
+}
+.structure-chain {
+  display:flex; flex-direction:column; gap:0;
+  margin-top:28px;
+}
+.chain-row {
+  display:flex; align-items:center; gap:14px;
+  padding:10px 0;
+  border-bottom:1px solid rgba(0,240,255,.08);
+  opacity:0; transform:translateX(-20px);
+  transition:all .4s ease;
+}
+.chain-row.show { opacity:1; transform:none; }
+.chain-num {
+  font-family:'Share Tech Mono',monospace;
+  font-size:10px; color:var(--pink); width:20px;
+}
+.chain-name {
+  font-family:'Orbitron',monospace;
+  font-size:13px; color:var(--cyan);
+  letter-spacing:2px; flex:1;
+}
+.chain-detail {
+  font-size:12px; color:rgba(255,255,255,.3);
+  letter-spacing:1px;
+}
+
+/* S5 — CONTRACTION */
+#s5 { flex-direction:column; align-items:center; justify-content:center; }
+#s5 .s5-layout {
+  display:flex; align-items:center;
+  gap:60px; width:85%; z-index:10; position:relative;
+}
+#s5 h2 {
+  font-family:'Orbitron',monospace;
+  font-size:clamp(26px,3.5vw,46px);
+  font-weight:900; color:#fff;
+  text-transform:uppercase; letter-spacing:3px;
+  text-align:center; margin-bottom:44px;
+  z-index:10; position:relative;
+}
+.sarcomere-wrap {
+  flex-shrink:0; width:440px; height:270px;
+  border:1px solid rgba(0,240,255,.15);
+  border-radius:6px; overflow:hidden;
+  position:relative;
+}
+#sarcomereCanvas { width:100%!important; height:100%!important; }
+.facts-col { flex:1; }
+.fact-block {
+  display:flex; gap:16px; align-items:flex-start;
+  padding:18px 0;
+  border-bottom:1px solid rgba(255,255,255,.06);
+  opacity:0; transform:translateX(30px);
+  transition:all .5s ease;
+}
+.fact-block.show { opacity:1; transform:none; }
+.fact-block:last-child { border-bottom:none; }
+.fact-icon { color:var(--pink); font-size:20px; margin-top:2px; flex-shrink:0; }
+.fact-title {
+  font-family:'Orbitron',monospace;
+  font-size:12px; font-weight:700;
+  color:#fff; letter-spacing:2px;
+  text-transform:uppercase; margin-bottom:5px;
+}
+.fact-text { font-size:13px; color:rgba(255,255,255,.45); line-height:1.6; }
+
+/* S6 — DYSTROPHY */
+#s6 .left-block {
+  position:absolute; left:5%; top:50%;
+  transform:translateY(-50%); max-width:40%; z-index:10;
+}
+.compare-pair {
+  display:grid; grid-template-columns:1fr 1fr;
+  gap:16px; margin-top:24px;
+}
+.compare-box {
+  border:1px solid; border-radius:6px;
+  padding:16px; backdrop-filter:blur(8px);
+  opacity:0; transform:translateY(20px);
+  transition:all .5s ease;
+}
+.compare-box.show { opacity:1; transform:none; }
+.compare-box.healthy { border-color:rgba(0,240,255,.3); background:rgba(0,240,255,.04); }
+.compare-box.sick    { border-color:rgba(255,32,112,.3); background:rgba(255,32,112,.04); }
+.compare-box h4 {
+  font-family:'Orbitron',monospace;
+  font-size:10px; letter-spacing:3px;
+  margin-bottom:10px; text-transform:uppercase;
+}
+.compare-box.healthy h4 { color:var(--cyan); }
+.compare-box.sick    h4 { color:var(--pink); }
+.compare-box ul { list-style:none; display:flex; flex-direction:column; gap:5px; }
+.compare-box ul li {
+  font-size:12px; color:rgba(255,255,255,.5);
+  padding-left:12px; position:relative;
+}
+.compare-box ul li::before {
+  content:''; position:absolute; left:0; top:50%;
+  transform:translateY(-50%);
+  width:4px; height:4px; border-radius:50%;
+}
+.compare-box.healthy ul li::before { background:var(--cyan); }
+.compare-box.sick    ul li::before { background:var(--pink); }
+
+/* S7 — SCAFFOLDS */
+#s7 .left-block {
+  position:absolute; left:5%; top:50%;
+  transform:translateY(-50%); max-width:30%; z-index:10;
+}
+.step-list { margin-top:24px; display:flex; flex-direction:column; gap:0; }
+.step-row {
+  display:flex; gap:14px; align-items:flex-start;
+  padding:14px 0;
+  border-bottom:1px solid rgba(0,240,255,.08);
+  opacity:0; transform:translateX(-20px);
+  transition:all .5s ease;
+}
+.step-row.show { opacity:1; transform:none; }
+.step-num {
+  width:26px; height:26px; border-radius:50%;
+  border:1px solid var(--cyan);
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Share Tech Mono',monospace;
+  font-size:10px; color:var(--cyan); flex-shrink:0;
+  margin-top:2px;
+}
+.step-title {
+  font-family:'Orbitron',monospace;
+  font-size:11px; letter-spacing:2px;
+  color:#fff; text-transform:uppercase; margin-bottom:3px;
+}
+.step-desc { font-size:12px; color:rgba(255,255,255,.4); line-height:1.5; }
+
+/* S8 — ARTIFICIAL MUSCLES */
+#s8 { flex-direction:column; align-items:center; justify-content:center; }
+#s8 .am-cards {
+  display:flex; gap:20px; margin-bottom:32px;
+  z-index:10; position:relative;
+}
+.am-card {
+  border:1px solid rgba(0,240,255,.15);
+  border-radius:8px; overflow:hidden;
+  width:300px;
+  background:rgba(0,10,25,.8);
+  backdrop-filter:blur(16px);
+  opacity:0; transform:translateY(30px) scale(.96);
+  transition:all .6s cubic-bezier(.34,1.56,.64,1);
+  cursor:pointer;
+}
+.am-card.show { opacity:1; transform:none; }
+.am-card:hover {
+  border-color:rgba(0,240,255,.5);
+  box-shadow:var(--glow-c);
+}
+.am-canvas-wrap { width:100%; height:170px; overflow:hidden; position:relative; }
+.am-canvas-wrap canvas { width:100%!important; height:100%!important; }
+.am-footer { padding:14px 16px; border-top:1px solid rgba(0,240,255,.08); }
+.am-name {
+  font-family:'Orbitron',monospace;
+  font-size:10px; letter-spacing:2px;
+  color:var(--cyan); text-transform:uppercase;
+  margin-bottom:3px;
+}
+.am-sub { font-size:11px; color:rgba(255,255,255,.35); }
+#s8 .s8-title {
+  font-family:'Orbitron',monospace;
+  font-size:clamp(24px,3vw,40px);
+  font-weight:900; color:#fff;
+  letter-spacing:3px; text-transform:uppercase;
+  text-align:center; z-index:10;
+}
+#s8 .s8-desc {
+  font-size:13px; color:rgba(255,255,255,.4);
+  max-width:680px; text-align:center;
+  line-height:1.7; margin-top:10px; z-index:10;
+}
+
+/* S9 — FUTURE APPS */
+#s9 .left-block {
+  position:absolute; left:5%; top:50%;
+  transform:translateY(-50%); max-width:34%; z-index:10;
+}
+#s9 .right-stack {
+  position:absolute; right:3%; top:50%;
+  transform:translateY(-50%); width:56%; z-index:10;
+  display:flex; flex-direction:column; gap:16px;
+}
+.app-card {
+  border:1px solid rgba(0,240,255,.14);
+  border-radius:8px; overflow:hidden;
+  background:rgba(0,10,25,.7);
+  backdrop-filter:blur(12px);
+  opacity:0; transform:translateX(40px);
+  transition:all .6s ease;
+}
+.app-card.show { opacity:1; transform:none; }
+.app-card-canvas { width:100%; height:160px; position:relative; }
+.app-card-canvas canvas { width:100%!important; height:100%!important; }
+.app-card-footer { padding:12px 16px; border-top:1px solid rgba(0,240,255,.08); }
+.app-card-title {
+  font-family:'Orbitron',monospace;
+  font-size:10px; letter-spacing:2px;
+  color:#fff; text-transform:uppercase; margin-bottom:2px;
+}
+.app-card-desc { font-size:11px; color:rgba(255,255,255,.35); }
+
+/* S10 — SUMMARY */
+#s10 { align-items:center; }
+#s10 .sum-left {
+  position:absolute; left:5%; top:50%;
+  transform:translateY(-50%); max-width:28%; z-index:10;
+}
+#s10 .sum-right {
+  position:absolute; right:4%; top:50%;
+  transform:translateY(-50%); width:30%; z-index:10;
+  display:flex; flex-direction:column; gap:24px;
+}
+.sum-point {
+  display:flex; gap:14px; align-items:flex-start;
+  opacity:0; transform:translateX(30px);
+  transition:all .5s ease;
+}
+.sum-point.show { opacity:1; transform:none; }
+.sum-arrow { color:var(--pink); font-size:18px; margin-top:2px; flex-shrink:0; }
+.sum-title {
+  font-family:'Orbitron',monospace;
+  font-size:11px; letter-spacing:2px;
+  color:#fff; text-transform:uppercase; margin-bottom:4px;
+}
+.sum-desc { font-size:12px; color:rgba(255,255,255,.4); line-height:1.5; }
+
+/* S11 — THANK YOU */
+#s11 {
+  align-items:center; justify-content:center;
+  flex-direction:column; gap:28px;
+}
+.thanks-h1 {
+  font-family:'Orbitron',monospace;
+  font-size:clamp(52px,8vw,110px);
+  font-weight:900; color:#fff;
+  text-transform:uppercase; text-align:center;
+  letter-spacing:3px; line-height:1;
+  position:relative; z-index:10;
+  opacity:0; transform:scale(.85);
+  transition:all .9s cubic-bezier(.34,1.56,.64,1);
+}
+.thanks-h1.show { opacity:1; transform:none; }
+.thanks-url {
+  border:1.5px solid rgba(0,240,255,.5);
+  border-radius:40px; padding:12px 32px;
+  font-family:'Orbitron',monospace;
+  font-size:11px; letter-spacing:4px;
+  color:var(--cyan); text-transform:uppercase;
+  box-shadow:var(--glow-c);
+  position:relative; z-index:10;
+  opacity:0; transform:translateY(20px);
+  transition:all .7s .4s cubic-bezier(.34,1.56,.64,1);
+}
+.thanks-url.show { opacity:1; transform:none; }
+
+/* SCAN LINE */
+.scanline {
+  position:fixed; inset:0; z-index:400; pointer-events:none;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.04) 3px,rgba(0,0,0,.04) 4px);
+}
+</style>
+</head>
+<body>
+
+<!-- UI CHROME -->
+<div id="cursor"></div>
+<div id="cursor-trail"></div>
+<div id="progress" style="width:9.09%"></div>
+<div class="slide-counter" id="counter">01 / 11</div>
+<div class="tap-hint" id="tap-hint">CLICK ANYWHERE TO ADVANCE</div>
+<div class="scanline"></div>
+<div id="transition-overlay"></div>
+
+<!-- THREE.JS BACKGROUND -->
+<canvas id="three-canvas"></canvas>
+
+<!-- SLIDE DECK -->
+<div id="deck">
+
+<!-- ══ S1: HERO ══ -->
+<div class="slide active" id="s1">
+  <div class="neon-corner tl"><svg width="80" height="60" viewBox="0 0 80 60"><line x1="0" y1="60" x2="0" y2="0"/><line x1="0" y1="0" x2="80" y2="0"/></svg></div>
+  <div class="neon-corner br"><svg width="80" height="60" viewBox="0 0 80 60"><line x1="0" y1="60" x2="0" y2="0"/><line x1="0" y1="0" x2="80" y2="0"/></svg></div>
+  <div class="nav-pills">
+    <div class="nav-pill active">BIOLOGY</div>
+    <div class="nav-pill">TECHNOLOGY</div>
+    <div class="nav-pill">FUTURE</div>
+  </div>
+  <!-- 3D MODEL renders here via Three.js in left 55% -->
+  <div class="hero-block">
+    <div class="hero-eyebrow">HUMAN HEALTH SYSTEMS — 2025</div>
+    <h1 class="hero-h1">THE<br>FUTURE<br><span>OF MUSCLES</span></h1>
+    <div class="hero-pill">FROM HUMAN BIOLOGY TO ARTIFICIAL MUSCLES</div>
+  </div>
+</div>
+
+<!-- ══ S2: INTRO ══ -->
+<div class="slide" id="s2">
+  <div class="neon-corner tl"><svg width="80" height="60" viewBox="0 0 80 60"><line x1="0" y1="60" x2="0" y2="0"/><line x1="0" y1="0" x2="80" y2="0"/></svg></div>
+  <div class="neon-corner br"><svg width="80" height="60" viewBox="0 0 80 60"><line x1="0" y1="60" x2="0" y2="0"/><line x1="0" y1="0" x2="80" y2="0"/></svg></div>
+  <div class="section-label">SECTION 01 — OVERVIEW</div>
+  <div class="nav-pills">
+    <div class="nav-pill active">OVERVIEW</div>
+    <div class="nav-pill">STRUCTURE</div>
+    <div class="nav-pill">FUNCTION</div>
+  </div>
+  <!-- 3D body model left side via Three.js -->
+  <div class="right-block">
+    <h2 class="slide-h2">INTRODUCTION<br>TO THE<br>MUSCULAR<br>SYSTEM</h2>
+    <div class="divider"></div>
+    <p class="slide-body">Muscles are the biological engines powering every human action — from heartbeats to voluntary movement. There are over 600 muscles in the human body, comprising 40% of total body weight.</p>
+  </div>
+</div>
+
+<!-- ══ S3: TYPES ══ -->
+<div class="slide" id="s3">
+  <div class="neon-corner tl"><svg width="80" height="60" viewBox="0 0 80 60"><line x1="0" y1="60" x2="0" y2="0"/><line x1="0" y1="0" x2="80" y2="0"/></svg></div>
+  <div class="neon-corner br"><svg width="80" height="60" viewBox="0 0 80 60"><line x1="0" y1="60" x2="0" y2="0"/><line x1="0" y1="0" x2="80" y2="0"/></svg></div>
+  <div class="section-label">SECTION 02 — TYPES</div>
+  <div class="nav-pills">
+    <div class="nav-pill active">SKELETAL</div>
+    <div class="nav-pill">SMOOTH</div>
+    <div class="nav-pill">CARDIAC</div>
+  </div>
+  <h2 class="s3-title">TYPES OF MUSCLES</h2>
+  <div class="cards-row">
+    <div class="type-card" id="tc1">
+      <div class="card-viewer" id="skel-viewer"></div>
+      <div class="card-body">
+        <div class="card-tag">VOLUNTARY</div>
+        <div class="card-name">SKELETAL</div>
+        <div class="card-desc">Attached to bones. Responsible for locomotion and posture. Contains fast and slow-twitch fibers.</div>
+      </div>
+    </div>
+    <div class="type-card" id="tc2">
+      <div class="card-viewer" id="smooth-viewer"></div>
+      <div class="card-body">
+        <div class="card-tag">INVOLUNTARY</div>
+        <div class="card-name">SMOOTH</div>
+        <div class="card-desc">Lines organ walls. Controls digestion, blood flow, and airway dilation. Spindle-shaped cells.</div>
+      </div>
+    </div>
+    <div class="type-card" id="tc3">
+      <div class="card-viewer" id="cardiac-viewer"></div>
+      <div class="card-body">
+        <div class="card-tag">AUTOMATIC</div>
+        <div class="card-name">CARDIAC</div>
+        <div class="card-desc">Powers the heart exclusively. Self-stimulating via pacemaker cells. Branched, striated fibers.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ S4: ZOOM ══ -->
+<div class="slide" id="s4">
+  <div class="neon-corner tl"><svg width="80" height="60" viewBox="0 0 80 60"><line x1="0" y1="60" x2="0" y2="0"/><line x1="0" y1="0" x2="80" y2="0"/></svg></div>
+  <div class="neon-corner br"><svg width="80" height="60" viewBox="0 0 80 60"><line x1="0" y1="60" x2="0" y2="0"/><line x1="0" y1="0" x2="80" y2="0"/></svg></div>
+  <div class="section-label">SECTION 03 — ARCHITECTURE</div>
+  <div class="left-block">
+    <h2 class="slide-h2">MUSCLE<br>STRUCTURE<br>ZOOM-IN</h2>
+    <div class="divider"></div>
+    <p class="slide-body">Journey from the whole muscle to its smallest functional unit — the sarcomere. Each level reveals increasingly complex architecture.</p>
+    <div class="structure-chain" id="chain-list">
+      <div class="chain-row"><span class="chain-num">01</span><span class="chain-name">MUSCLE</span><span class="chain-detail">Whole organ</span></div>
+      <div class="chain-row"><span class="chain-num">02</span><span class="chain-name">FASCICLE</span><span class="chain-detail">Fiber bundles</span></div>
+      <div class="chain-row"><span class="chain-num">03</span><span class="chain-name">FIBER</span><span class="chain-detail">Single cell</span></div>
+      <div class="chain-row"><span class="chain-num">04</span><span class="chain-name">MYOFIBRIL</span><span class="chain-detail">Protein rods</span></div>
+      <div class="chain-row"><span class="chain-num">05</span><span class="chain-name">SARCOMERE</span><span class="chain-detail">Functional unit</span></div>
+    </div>
+  </div>
+  <!-- 3D zoom model right side -->
+</div>
+
+<!-- ══ S5: CONTRACTION ══ -->
+<div class="slide" id="s5">
+  <div class="neon-corner tl"><svg width="80" height="60" viewBox="0 0 80 60"><line x1="0" y1="60" x2="0" y2="0"/><line x1="0" y1="0" x2="80" y2="0"/></svg></div>
+  <div class="neon-corner br"><svg width="80" height="60" viewBox="0 0 80 60"><line x1="0" y1="60" x2="0" y2="0"/><line x1="0" y1="0" x2="80" y2="0"/></svg></div>
+  <div class="section-label">SECTION 04 — MECHANISM</div>
+  <h2>MUSCLE CONTRACTION<br>MECHANISM</h2>
+  <div class="s5-layout">
+    <div class="sarcomere-wrap">
+      <canvas id="sarcomereCanvas"></canvas>
+    </div>
+    <div class="facts-col">
+      <div class="fact-block" id="fb1">
+        <div class="fact-icon">⟶</div>
+        <div><div class="fact-title">SLIDING FILAMENT THEORY</div><div class="fact-text">Actin and myosin filaments slide past each other, shortening the sarcomere and contracting the muscle fiber in a ratchet-like mechanism.</div></div>
+      </div>
+      <div class="fact-block" id="fb2">
+        <div class="fact-icon">⟶</div>
+        <div><div class="fact-title">ATP-POWERED CROSS-BRIDGES</div><div class="fact-text">Myosin heads bind to actin, power-stroke, detach, and reset using ATP — cycling 5–50 times per second at full effort.</div></div>
+      </div>
+      <div class="fact-block" id="fb3">
+        <div class="fact-icon">⟶</div>
+        <div><div class="fact-title">CALCIUM ION TRIGGER</div><div class="fact-text">Ca²⁺ released from the sarcoplasmic reticulum exposes binding sites on actin filaments, initiating the entire contraction cascade.</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ S6: DYSTROPHY ══ -->
+<div class="slide" id="s6">
+  <div class="neon-corner tl"><svg width="80" height="60" viewBox="0 0 80 60"><line x1="0" y1="60" x2="0" y2="0"/><line x1="0" y1="0" x2="80" y2="0"/></svg></div>
+  <div class="neon-corner br"><svg width="80" height="60" viewBox="0 0 80 60"><line x1="0" y1="60" x2="0" y2="0"/><line x1="0" y1="0" x2="80" y2="0"/></svg></div>
+  <div class="section-label">SECTION 05 — DISEASE</div>
+  <div class="nav-pills">
+    <div class="nav-pill active">HEALTHY</div>
+    <div class="nav-pill">COMPARE</div>
+    <div class="nav-pill">DYSTROPHIC</div>
+  </div>
+  <div class="left-block">
+    <h2 class="slide-h2">MUSCULAR<br>DYSTROPHY:<br>HEALTHY<br>VS AFFECTED</h2>
+    <div class="compare-pair">
+      <div class="compare-box healthy" id="cb1">
+        <h4>HEALTHY</h4>
+        <ul><li>Organized fibers</li><li>Full dystrophin</li><li>Regular contraction</li><li>Efficient force</li></ul>
+      </div>
+      <div class="compare-box sick" id="cb2">
+        <h4>DYSTROPHIC</h4>
+        <ul><li>Disorganized fibers</li><li>Absent dystrophin</li><li>Impaired function</li><li>Progressive loss</li></ul>
+      </div>
+    </div>
+  </div>
+  <!-- 3D fiber right -->
+</div>
+
+<!-- ══ S7: SCAFFOLDS ══ -->
+<div class="slide" id="s7">
+  <div class="neon-corner tl"><svg width="80" height="60" viewBox="0 0 80 60"><line x1="0" y1="60" x2="0" y2="0"/><line x1="0" y1="0" x2="80" y2="0"/></svg></div>
+  <div class="neon-corner br"><svg width="80" height="60" viewBox="0 0 80 60"><line x1="0" y1="60" x2="0" y2="0"/><line x1="0" y1="0" x2="80" y2="0"/></svg></div>
+  <div class="section-label">SECTION 06 — REGENERATION</div>
+  <div class="nav-pills">
+    <div class="nav-pill active">HARVEST</div>
+    <div class="nav-pill">SCAFFOLD</div>
+    <div class="nav-pill">GROW</div>
+  </div>
+  <div class="left-block">
+    <h2 class="slide-h2">REGENERATIVE<br>MEDICINE &amp;<br>MUSCLE<br>SCAFFOLDS</h2>
+    <div class="step-list">
+      <div class="step-row" id="sr1"><div class="step-num">01</div><div><div class="step-title">HARVEST MUSCLE CELLS</div><div class="step-desc">Extract myogenic cells from patient tissue biopsy</div></div></div>
+      <div class="step-row" id="sr2"><div class="step-num">02</div><div><div class="step-title">DECELLULARIZATION</div><div class="step-desc">Remove cells, preserve extracellular matrix scaffold</div></div></div>
+      <div class="step-row" id="sr3"><div class="step-num">03</div><div><div class="step-title">SEED THE SCAFFOLD</div><div class="step-desc">Place stem cells onto hydrogel or ECM matrix</div></div></div>
+      <div class="step-row" id="sr4"><div class="step-num">04</div><div><div class="step-title">TISSUE REGENERATION</div><div class="step-desc">Cells proliferate, differentiate, and implant</div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ S8: ARTIFICIAL MUSCLES ══ -->
+<div class="slide" id="s8">
+  <div class="neon-corner tl"><svg width="80" height="60" viewBox="0 0 80 60"><line x1="0" y1="60" x2="0" y2="0"/><line x1="0" y1="0" x2="80" y2="0"/></svg></div>
+  <div class="neon-corner br"><svg width="80" height="60" viewBox="0 0 80 60"><line x1="0" y1="60" x2="0" y2="0"/><line x1="0" y1="0" x2="80" y2="0"/></svg></div>
+  <div class="section-label">SECTION 07 — BIOENGINEERING</div>
+  <div class="nav-pills">
+    <div class="nav-pill active">ALLOYS</div>
+    <div class="nav-pill">POLYMERS</div>
+    <div class="nav-pill">NANOTUBES</div>
+  </div>
+  <div class="am-cards">
+    <div class="am-card" id="am1"><div class="am-canvas-wrap" id="sma-wrap"></div><div class="am-footer"><div class="am-name">SHAPE MEMORY ALLOYS</div><div class="am-sub">NiTi — Heat-activated contraction, 70% force gain via bi-pennate design (IIT Kanpur)</div></div></div>
+    <div class="am-card" id="am2"><div class="am-canvas-wrap" id="eap-wrap"></div><div class="am-footer"><div class="am-name">ELECTROACTIVE POLYMERS</div><div class="am-sub">Polypyrrole — Electric field drives shape change, lightweight &amp; flexible</div></div></div>
+    <div class="am-card" id="am3"><div class="am-canvas-wrap" id="cnt-wrap"></div><div class="am-footer"><div class="am-name">CARBON NANOTUBES</div><div class="am-sub">CNT bundles — Highest power-to-weight ratio, ultra-fast response</div></div></div>
+  </div>
+  <div class="s8-title">ARTIFICIAL MUSCLES AND BIOENGINEERING</div>
+  <div class="s8-desc">These three materials form the cornerstone of next-gen prosthetics, space robotics, and medical actuators. IIT Kanpur's SMSS Lab achieved 70% enhanced force output via bi-pennate SMA architecture.</div>
+</div>
+
+<!-- ══ S9: FUTURE APPS ══ -->
+<div class="slide" id="s9">
+  <div class="neon-corner tl"><svg width="80" height="60" viewBox="0 0 80 60"><line x1="0" y1="60" x2="0" y2="0"/><line x1="0" y1="0" x2="80" y2="0"/></svg></div>
+  <div class="neon-corner br"><svg width="80" height="60" viewBox="0 0 80 60"><line x1="0" y1="60" x2="0" y2="0"/><line x1="0" y1="0" x2="80" y2="0"/></svg></div>
+  <div class="section-label">SECTION 08 — APPLICATIONS</div>
+  <div class="left-block">
+    <h2 class="slide-h2">FUTURE<br>APPLICATIONS<br>OF ARTIFICIAL<br>MUSCLES</h2>
+    <div class="divider"></div>
+    <p class="slide-body">Artificial muscles are transforming every field that requires precise, powerful, and lightweight actuation — from surgical robots to smart wearables.</p>
+  </div>
+  <div class="right-stack">
+    <div class="app-card" id="ac1"><div class="app-card-canvas" id="pros-wrap"></div><div class="app-card-footer"><div class="app-card-title">Prosthetic Limbs &amp; Soft Robotics</div><div class="app-card-desc">Advanced movement, fluid motion, human-like dexterity and force sensing</div></div></div>
+    <div class="app-card" id="ac2"><div class="app-card-canvas" id="exo-wrap"></div><div class="app-card-footer"><div class="app-card-title">Medical Devices &amp; Smart Clothing</div><div class="app-card-desc">Patient rehabilitation assistance and adaptive pressure wearables</div></div></div>
+  </div>
+</div>
+
+<!-- ══ S10: SUMMARY ══ -->
+<div class="slide" id="s10">
+  <div class="neon-corner tl"><svg width="80" height="60" viewBox="0 0 80 60"><line x1="0" y1="60" x2="0" y2="0"/><line x1="0" y1="0" x2="80" y2="0"/></svg></div>
+  <div class="neon-corner br"><svg width="80" height="60" viewBox="0 0 80 60"><line x1="0" y1="60" x2="0" y2="0"/><line x1="0" y1="0" x2="80" y2="0"/></svg></div>
+  <div class="section-label">SUMMARY</div>
+  <div class="sum-left">
+    <h2 class="slide-h2">SUMMARY<br>&amp; KEY<br>TAKEAWAYS</h2>
+  </div>
+  <!-- central body model -->
+  <div class="sum-right">
+    <div class="sum-point" id="sum1"><div class="sum-arrow">⟶</div><div><div class="sum-title">MOVEMENT &amp; FUNCTION</div><div class="sum-desc">600+ muscles power every human action and vital biological function</div></div></div>
+    <div class="sum-point" id="sum2"><div class="sum-arrow">⟶</div><div><div class="sum-title">HIERARCHICAL STRUCTURE</div><div class="sum-desc">From sarcomere to whole muscle — architecture enables contraction</div></div></div>
+    <div class="sum-point" id="sum3"><div class="sum-arrow">⟶</div><div><div class="sum-title">REGENERATIVE MEDICINE</div><div class="sum-desc">ECM scaffolds guide tissue regrowth for injuries and dystrophy</div></div></div>
+    <div class="sum-point" id="sum4"><div class="sum-arrow">⟶</div><div><div class="sum-title">ARTIFICIAL MUSCLES</div><div class="sum-desc">SMA, EAP, CNT technologies mimic biology for robotics &amp; prosthetics</div></div></div>
+  </div>
+</div>
+
+<!-- ══ S11: THANK YOU ══ -->
+<div class="slide" id="s11">
+  <div class="neon-corner tl"><svg width="80" height="60" viewBox="0 0 80 60"><line x1="0" y1="60" x2="0" y2="0"/><line x1="0" y1="0" x2="80" y2="0"/></svg></div>
+  <div class="neon-corner br"><svg width="80" height="60" viewBox="0 0 80 60"><line x1="0" y1="60" x2="0" y2="0"/><line x1="0" y1="0" x2="80" y2="0"/></svg></div>
+  <h1 class="thanks-h1" id="thanksH1">THANK YOU!<br>QUESTIONS?</h1>
+  <div class="thanks-url" id="thanksUrl">WWW.COURSEMATERIALS.EDU/MUSCLES</div>
+</div>
+
+</div><!-- /deck -->
+
+<!-- THREE.JS from CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="js/presentation.js"></script>
+</body>
+</html>

@@ -189,7 +189,7 @@ function loadGLB(scene, path, onLoad, onFail) {
 function createAnatomyModelRoot(model, options = {}) {
   const {
     height = 5.2,
-    position = [0, -2.4, 0],
+    position = [0, 0, 0],
     rotation = [0, 0, 0]
   } = options;
 
@@ -208,8 +208,12 @@ function createAnatomyModelRoot(model, options = {}) {
   const center = box.getCenter(new THREE.Vector3());
   const scale = size.y ? height / size.y : 1;
 
-  model.position.sub(center);
   model.scale.setScalar(scale);
+  model.position.set(
+    -center.x * scale,
+    -center.y * scale,
+    -center.z * scale
+  );
 
   const root = new THREE.Group();
   root.add(model);
@@ -814,8 +818,9 @@ function initSlide2() {
     'human+anatomy+3d+model.glb',
     model => {
       body = createAnatomyModelRoot(model, {
-        height: 5.4,
-        position: [0, -2.45, 0]
+        height: 4.8,
+        position: [0, -0.15, 0],
+        rotation: [0, -0.35, 0]
       });
       scene.add(body);
     },
@@ -840,7 +845,10 @@ function initSlide2() {
   function loop(){
     requestAnimationFrame(loop);
     t+=.01; scanY+=.04; if(scanY>2.5) scanY=-2;
-    if (body) body.rotation.y = Math.sin(t*.25)*.08;
+    if (body) {
+      body.rotation.y = -0.35 + t * 0.12 + Math.sin(t * 0.35) * 0.12;
+      body.rotation.x = Math.sin(t * 0.2) * 0.03;
+    }
     scan.position.y=scanY; scan.rotation.x=Math.PI/2;
     renderer.render(scene,camera);
   }
@@ -1167,8 +1175,9 @@ function initSlide10() {
     'human+anatomy+3d+model.glb',
     model => {
       body = createAnatomyModelRoot(model, {
-        height: 5.6,
-        position: [0, -2.55, 0]
+        height: 5.1,
+        position: [0, -0.1, 0],
+        rotation: [0, 0.45, 0]
       });
       scene.add(body);
     },
@@ -1188,7 +1197,10 @@ function initSlide10() {
   function loop(){
     requestAnimationFrame(loop);
     t+=.01;
-    if (body) body.rotation.y = t*.2;
+    if (body) {
+      body.rotation.y = 0.45 + t * 0.3;
+      body.rotation.x = Math.sin(t * 0.18) * 0.025;
+    }
     orbits.forEach((o,i)=>{o.rotation.y=t*(.3+i*.1);o.rotation.x+=.005;});
     renderer.render(scene,camera);
   }

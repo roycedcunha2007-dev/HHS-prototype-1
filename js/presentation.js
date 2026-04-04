@@ -1036,28 +1036,70 @@ function initSlide5() {
 function initSlide6() {
   if(scenes[5])return;
   const container=document.createElement('div');
-  container.style.cssText='position:absolute;right:3%;top:50%;transform:translateY(-50%);width:46%;height:72%;z-index:5;pointer-events:none;';
+  container.style.cssText='position:absolute;right:2%;top:50%;transform:translateY(-50%);width:48%;height:76%;z-index:5;pointer-events:none;';
   document.getElementById('s6').appendChild(container);
 
-  const {renderer,scene,camera}=makeScene(container,{fov:36,cam:[0.9,0.15,5.4]});
+  const {renderer,scene,camera}=makeScene(container,{fov:32,cam:[0.4,0.08,6.8]});
+
+  const displayGroup = new THREE.Group();
+  displayGroup.position.set(0.42, 0.05, 0);
+  scene.add(displayGroup);
+
+  const backdrop = new THREE.Mesh(
+    new THREE.PlaneGeometry(7.4, 5.4),
+    new THREE.MeshBasicMaterial({ color: 0x06111e, transparent: true, opacity: 0.24 })
+  );
+  backdrop.position.set(0.22, 0, -1.35);
+  scene.add(backdrop);
+
+  const cyanGlow = new THREE.Mesh(
+    new THREE.CircleGeometry(1.55, 48),
+    new THREE.MeshBasicMaterial({ color: 0x42efff, transparent: true, opacity: 0.1 })
+  );
+  cyanGlow.position.set(0.78, 0.18, -0.9);
+  scene.add(cyanGlow);
+
+  const magentaGlow = new THREE.Mesh(
+    new THREE.CircleGeometry(1.28, 48),
+    new THREE.MeshBasicMaterial({ color: 0xff3a98, transparent: true, opacity: 0.08 })
+  );
+  magentaGlow.position.set(-0.05, -0.3, -0.82);
+  scene.add(magentaGlow);
+
+  const orbitRing = new THREE.Mesh(
+    new THREE.TorusGeometry(1.72, 0.016, 8, 80),
+    new THREE.MeshBasicMaterial({ color: 0x54eaff, transparent: true, opacity: 0.16 })
+  );
+  orbitRing.rotation.x = Math.PI * 0.52;
+  orbitRing.rotation.y = 0.28;
+  orbitRing.position.set(0.46, -0.04, -0.38);
+  scene.add(orbitRing);
 
   let showing='healthy';
-  const healthy=buildFiber(false); healthy.position.x=0;
-  const sick=buildFiber(true); sick.visible=false;
-  scene.add(healthy); scene.add(sick);
+  const healthy=buildFiber(false);
+  const sick=buildFiber(true);
+  healthy.scale.setScalar(0.9);
+  sick.scale.setScalar(0.9);
+  healthy.visible=true;
+  sick.visible=false;
+  displayGroup.add(healthy);
+  displayGroup.add(sick);
 
   // Swap timer
-  healthy.position.x = 0.08;
-  sick.position.x = 0.08;
-
   let t=0, swap=0;
   function loop(){
     requestAnimationFrame(loop);
     t+=.015; swap+=.015;
     if(swap>6){swap=0;showing=showing==='healthy'?'sick':'healthy';healthy.visible=showing==='healthy';sick.visible=showing==='sick';}
     const active=showing==='healthy'?healthy:sick;
-    active.rotation.y = 0.65 + Math.sin(t * 0.45) * 0.08;
-    active.rotation.x = -0.18 + Math.sin(t * 0.3) * 0.03;
+    displayGroup.rotation.y = 0.78 + t * 0.22;
+    displayGroup.rotation.x = -0.22 + Math.sin(t * 0.35) * 0.03;
+    displayGroup.rotation.z = 0.06 + Math.sin(t * 0.22) * 0.018;
+    active.rotation.y = Math.sin(t * 0.7) * 0.025;
+    active.rotation.x = Math.sin(t * 0.45) * 0.015;
+    orbitRing.rotation.z += 0.0025;
+    cyanGlow.material.opacity = 0.08 + Math.sin(t * 0.8) * 0.02;
+    magentaGlow.material.opacity = 0.06 + Math.sin(t * 0.9 + 1.4) * 0.018;
     renderer.render(scene,camera);
   }
   loop();

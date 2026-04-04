@@ -1042,7 +1042,7 @@ function goTo(idx) {
 // INPUT
 // ═══════════════════════════════════════════════════════
 function goNext() {
-  if (currentSlide < TOTAL - 1) goTo(currentSlide + 1);
+  goTo((currentSlide + 1) % TOTAL);
 }
 
 function goPrev() {

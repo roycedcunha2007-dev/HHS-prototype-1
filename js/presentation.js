@@ -33,6 +33,7 @@ function initBackground() {
   const canvas = document.getElementById('three-canvas');
   const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setClearColor(0x03070f, 1);
   renderer.setSize(innerWidth, innerHeight);
 
   const scene = new THREE.Scene();
@@ -78,6 +79,12 @@ function initBackground() {
     scene.add(new THREE.Line(g2, gridMat));
   }
 
+  function syncBackgroundViewport() {
+    renderer.setSize(window.innerWidth, window.innerHeight, false);
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+  }
+
   let t = 0;
   function animate() {
     requestAnimationFrame(animate);
@@ -93,11 +100,16 @@ function initBackground() {
   }
   animate();
 
-  window.addEventListener('resize', () => {
-    camera.aspect = innerWidth / innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(innerWidth, innerHeight);
+  syncBackgroundViewport();
+  window.addEventListener('resize', syncBackgroundViewport);
+  window.addEventListener('pageshow', syncBackgroundViewport);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) syncBackgroundViewport();
   });
+  canvas.addEventListener('webglcontextlost', e => {
+    e.preventDefault();
+  });
+  canvas.addEventListener('webglcontextrestored', syncBackgroundViewport);
 }
 
 // ═══════════════════════════════════════════════════════

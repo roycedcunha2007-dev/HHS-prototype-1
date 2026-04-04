@@ -102,6 +102,32 @@ body:hover #cursor { background:rgba(0,240,255,.15); }
 }
 @keyframes blink { 0%,100%{opacity:.2} 50%{opacity:.6} }
 
+/* NAV ARROWS */
+.nav-arrow {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgba(0, 240, 255, 0.35);
+  border-radius: 50%;
+  background: rgba(0, 10, 25, 0.65);
+  color: var(--cyan);
+  font-family: 'Orbitron', monospace;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 250;
+  transition: border-color .2s, box-shadow .2s, background .2s;
+}
+.nav-arrow:hover {
+  border-color: var(--cyan);
+  box-shadow: var(--glow-c);
+  background: rgba(0, 20, 40, 0.85);
+}
+#nav-left { left: 24px; }
+#nav-right { right: 24px; }
+
 /* ── PROGRESS BAR ── */
 #progress {
   position:fixed; top:0; left:0; height:2px;
@@ -535,7 +561,9 @@ body:hover #cursor { background:rgba(0,240,255,.15); }
 <div id="cursor-trail"></div>
 <div id="progress" style="width:9.09%"></div>
 <div class="slide-counter" id="counter">01 / 11</div>
-<div class="tap-hint" id="tap-hint">CLICK ANYWHERE TO ADVANCE</div>
+<div class="tap-hint" id="tap-hint">CLICK LEFT OR RIGHT TO NAVIGATE</div>
+<button class="nav-arrow" id="nav-left" aria-label="Previous slide">&#10094;</button>
+<button class="nav-arrow" id="nav-right" aria-label="Next slide">&#10095;</button>
 <div class="scanline"></div>
 <div id="transition-overlay"></div>
 

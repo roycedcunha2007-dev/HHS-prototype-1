@@ -1041,18 +1041,45 @@ function goTo(idx) {
 // ═══════════════════════════════════════════════════════
 // INPUT
 // ═══════════════════════════════════════════════════════
-document.addEventListener('click',()=>{if(currentSlide<TOTAL-1)goTo(currentSlide+1);});
+function goNext() {
+  if (currentSlide < TOTAL - 1) goTo(currentSlide + 1);
+}
+
+function goPrev() {
+  if (currentSlide > 0) goTo(currentSlide - 1);
+}
+
+document.addEventListener('click', e => {
+  const rightSide = e.clientX >= window.innerWidth / 2;
+  if (rightSide) goNext();
+  else goPrev();
+});
 document.addEventListener('keydown',e=>{
-  if(['ArrowRight',' ','Enter'].includes(e.key)){e.preventDefault();if(currentSlide<TOTAL-1)goTo(currentSlide+1);}
-  if(e.key==='ArrowLeft'&&currentSlide>0)goTo(currentSlide-1);
+  if(['ArrowRight',' ','Enter'].includes(e.key)){e.preventDefault();goNext();}
+  if(e.key==='ArrowLeft') goPrev();
 });
 let tX=0;
 document.addEventListener('touchstart',e=>{tX=e.touches[0].clientX},{passive:true});
 document.addEventListener('touchend',e=>{
   const dx=e.changedTouches[0].clientX-tX;
-  if(dx<-50&&currentSlide<TOTAL-1)goTo(currentSlide+1);
-  if(dx>50&&currentSlide>0)goTo(currentSlide-1);
+  if(dx<-50)goNext();
+  if(dx>50)goPrev();
 });
+
+const navLeft = document.getElementById('nav-left');
+const navRight = document.getElementById('nav-right');
+if (navLeft) {
+  navLeft.addEventListener('click', e => {
+    e.stopPropagation();
+    goPrev();
+  });
+}
+if (navRight) {
+  navRight.addEventListener('click', e => {
+    e.stopPropagation();
+    goNext();
+  });
+}
 
 // ═══════════════════════════════════════════════════════
 // BOOT

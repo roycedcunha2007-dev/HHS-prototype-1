@@ -186,6 +186,38 @@ function loadGLB(scene, path, onLoad, onFail) {
   }
 }
 
+function createAnatomyModelRoot(model, options = {}) {
+  const {
+    height = 5.2,
+    position = [0, -2.4, 0],
+    rotation = [0, 0, 0]
+  } = options;
+
+  model.traverse(node => {
+    if (!node.isMesh) return;
+    node.castShadow = false;
+    node.receiveShadow = false;
+    if (node.material) {
+      node.material.transparent = true;
+      node.material.opacity = 0.96;
+    }
+  });
+
+  const box = new THREE.Box3().setFromObject(model);
+  const size = box.getSize(new THREE.Vector3());
+  const center = box.getCenter(new THREE.Vector3());
+  const scale = size.y ? height / size.y : 1;
+
+  model.position.sub(center);
+  model.scale.setScalar(scale);
+
+  const root = new THREE.Group();
+  root.add(model);
+  root.position.set(...position);
+  root.rotation.set(...rotation);
+  return root;
+}
+
 // ═══════════════════════════════════════════════════════
 // PROCEDURAL MODELS (beautiful fallbacks + supplements)
 // ═══════════════════════════════════════════════════════
@@ -614,9 +646,25 @@ function initSlide2() {
 
   const { renderer, scene, camera } = makeScene(container, { fov:38, cam:[0,0,8] });
 
-  // Try to load real GLB, fallback to procedural
-  const body = buildProceduralBody(scene);
-  scene.add(body);
+  let body = null;
+  const useFallbackBody = () => {
+    if (body) return;
+    body = buildProceduralBody(scene);
+    scene.add(body);
+  };
+
+  loadGLB(
+    scene,
+    'human+anatomy+3d+model.glb',
+    model => {
+      body = createAnatomyModelRoot(model, {
+        height: 5.4,
+        position: [0, -2.45, 0]
+      });
+      scene.add(body);
+    },
+    useFallbackBody
+  );
 
   // Scan plane
   const scanMat = new THREE.MeshBasicMaterial({color:0x00f0ff,transparent:true,opacity:.06,side:THREE.DoubleSide});
@@ -636,7 +684,7 @@ function initSlide2() {
   function loop(){
     requestAnimationFrame(loop);
     t+=.01; scanY+=.04; if(scanY>2.5) scanY=-2;
-    body.rotation.y=Math.sin(t*.25)*.08;
+    if (body) body.rotation.y = Math.sin(t*.25)*.08;
     scan.position.y=scanY; scan.rotation.x=Math.PI/2;
     renderer.render(scene,camera);
   }
@@ -947,8 +995,25 @@ function initSlide10() {
   document.getElementById('s10').appendChild(container);
 
   const {renderer,scene,camera}=makeScene(container,{fov:40,cam:[0,.5,8]});
-  const body=buildProceduralBody(scene);
-  scene.add(body);
+  let body = null;
+  const useFallbackBody = () => {
+    if (body) return;
+    body = buildProceduralBody(scene);
+    scene.add(body);
+  };
+
+  loadGLB(
+    scene,
+    'human+anatomy+3d+model.glb',
+    model => {
+      body = createAnatomyModelRoot(model, {
+        height: 5.6,
+        position: [0, -2.55, 0]
+      });
+      scene.add(body);
+    },
+    useFallbackBody
+  );
 
   // Orbiting data rings
   const orbitMat=new THREE.MeshBasicMaterial({color:0x8800ff,transparent:true,opacity:.2});
@@ -962,7 +1027,8 @@ function initSlide10() {
   let t=0;
   function loop(){
     requestAnimationFrame(loop);
-    t+=.01; body.rotation.y=t*.2;
+    t+=.01;
+    if (body) body.rotation.y = t*.2;
     orbits.forEach((o,i)=>{o.rotation.y=t*(.3+i*.1);o.rotation.x+=.005;});
     renderer.render(scene,camera);
   }

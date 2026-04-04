@@ -359,45 +359,201 @@ function buildSarcomere(scene) {
 // Muscle fiber cylinder — healthy or sick
 function buildFiber(sick = false) {
   const group = new THREE.Group();
-  const color  = sick ? 0xff2070 : 0xcc2244;
-  const emis   = sick ? 0x440011 : 0x220011;
+  const length = 3.3;
+  const radius = sick ? 0.98 : 1.02;
+  const coreColor = sick ? 0xdb4b72 : 0xf05384;
+  const sheathColor = sick ? 0x4fd7e3 : 0x63eeff;
+  const endX = length / 2;
 
-  // Main cylinder
-  const cyl = new THREE.Mesh(
-    new THREE.CylinderGeometry(1, 1, 2.5, 32, 8),
-    new THREE.MeshPhysicalMaterial({ color, emissive:emis, emissiveIntensity:.3, roughness:.5, metalness:.05, transparent:true, opacity:.85 })
-  );
-  group.add(cyl);
-
-  // Internal striation lines
-  const count = sick ? 6 : 12;
-  for (let i=0;i<count;i++) {
-    const angle = (i/count)*Math.PI*2;
-    const wobble = sick ? (Math.random()-.5)*.4 : 0;
-    const line = new THREE.Mesh(
-      new THREE.CylinderGeometry(.018,.018,2.5,6),
-      new THREE.MeshBasicMaterial({ color: sick ? 0xff5588 : 0x00f0ff, transparent:true, opacity: sick?.3:.5 })
-    );
-    line.position.set(Math.cos(angle+wobble)*.75, 0, Math.sin(angle+wobble)*.75);
-    group.add(line);
-  }
-
-  // End caps
-  [-1,1].forEach(s => {
-    const cap = new THREE.Mesh(
-      new THREE.CircleGeometry(1,32),
-      new THREE.MeshBasicMaterial({ color: sick ? 0xff2070 : 0x00f0ff, transparent:true, opacity:.4, side:THREE.DoubleSide })
-    );
-    cap.position.y = s*1.26; cap.rotation.x = Math.PI/2; group.add(cap);
+  const bodyMat = new THREE.MeshPhysicalMaterial({
+    color: coreColor,
+    emissive: sick ? 0x360813 : 0x541126,
+    emissiveIntensity: sick ? 0.16 : 0.26,
+    roughness: 0.42,
+    metalness: 0.08,
+    clearcoat: 0.24,
+    clearcoatRoughness: 0.58
+  });
+  const sheathMat = new THREE.MeshPhysicalMaterial({
+    color: sheathColor,
+    emissive: 0x0d5e6b,
+    emissiveIntensity: sick ? 0.28 : 0.45,
+    transparent: true,
+    opacity: sick ? 0.55 : 0.72,
+    roughness: 0.18,
+    metalness: 0.05,
+    transmission: 0.08
+  });
+  const dividerMat = new THREE.MeshBasicMaterial({
+    color: sheathColor,
+    transparent: true,
+    opacity: sick ? 0.45 : 0.72
+  });
+  const fascicleMat = new THREE.MeshPhysicalMaterial({
+    color: sick ? 0xd54567 : 0xe84f79,
+    emissive: sick ? 0x22070d : 0x3f0f1c,
+    emissiveIntensity: 0.18,
+    roughness: 0.52,
+    metalness: 0.04
   });
 
-  // Wireframe overlay
-  const wf = new THREE.Mesh(
-    new THREE.CylinderGeometry(1.02,1.02,2.5,32,4),
-    new THREE.MeshBasicMaterial({ color: sick?0xff2070:0x00f0ff, wireframe:true, transparent:true, opacity:.12 })
+  const body = new THREE.Mesh(
+    new THREE.CylinderGeometry(radius, radius * (sick ? 1.03 : 1), length, 72, 1, true),
+    bodyMat
   );
-  group.add(wf);
+  body.rotation.z = Math.PI / 2;
+  group.add(body);
 
+  const innerCore = new THREE.Mesh(
+    new THREE.CylinderGeometry(radius * 0.92, radius * 0.92, length * 0.985, 64, 1, true),
+    new THREE.MeshPhysicalMaterial({
+      color: sick ? 0xc83f65 : 0xd94772,
+      emissive: sick ? 0x22060b : 0x300b15,
+      emissiveIntensity: 0.12,
+      roughness: 0.55,
+      metalness: 0.02,
+      transparent: true,
+      opacity: 0.88
+    })
+  );
+  innerCore.rotation.z = Math.PI / 2;
+  group.add(innerCore);
+
+  const ridgeCount = sick ? 28 : 40;
+  for (let i = 0; i < ridgeCount; i++) {
+    const angle = (i / ridgeCount) * Math.PI * 2;
+    const r = radius * (sick ? 0.95 + Math.sin(i * 1.7) * 0.03 : 0.965);
+    const ridge = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.042, 0.042, length * 0.985, 10),
+      new THREE.MeshPhysicalMaterial({
+        color: sick ? 0xf06b8a : 0xff7aa0,
+        emissive: sick ? 0x4a0c1b : 0x6d1530,
+        emissiveIntensity: sick ? 0.2 : 0.3,
+        roughness: 0.28,
+        metalness: 0.06
+      })
+    );
+    ridge.rotation.z = Math.PI / 2;
+    ridge.position.set(0, Math.cos(angle) * r, Math.sin(angle) * r);
+    group.add(ridge);
+  }
+
+  const frontRing = new THREE.Mesh(
+    new THREE.RingGeometry(radius * 0.89, radius * 1.03, 72),
+    sheathMat
+  );
+  frontRing.position.x = endX + 0.012;
+  frontRing.rotation.y = Math.PI / 2;
+  group.add(frontRing);
+
+  const backCap = new THREE.Mesh(
+    new THREE.CircleGeometry(radius * 0.98, 64),
+    new THREE.MeshPhysicalMaterial({
+      color: sick ? 0xc13d64 : 0xd74772,
+      emissive: sick ? 0x1f060b : 0x2d0a14,
+      emissiveIntensity: 0.1,
+      roughness: 0.64,
+      metalness: 0.02,
+      transparent: true,
+      opacity: 0.82
+    })
+  );
+  backCap.position.x = -endX - 0.002;
+  backCap.rotation.y = -Math.PI / 2;
+  group.add(backCap);
+
+  const fascicleSpecs = sick ? [
+    { y: 0.37, z: 0.41, ry: 0.29, rz: 0.42 },
+    { y: -0.42, z: 0.32, ry: 0.3, rz: 0.33 },
+    { y: 0.08, z: -0.43, ry: 0.25, rz: 0.45 },
+    { y: -0.46, z: -0.18, ry: 0.18, rz: 0.23 },
+    { y: 0.48, z: -0.16, ry: 0.2, rz: 0.23 }
+  ] : [
+    { y: 0.42, z: 0.34, ry: 0.31, rz: 0.42 },
+    { y: -0.41, z: 0.33, ry: 0.31, rz: 0.39 },
+    { y: 0.02, z: -0.43, ry: 0.26, rz: 0.45 },
+    { y: -0.46, z: -0.02, ry: 0.19, rz: 0.24 },
+    { y: 0.49, z: -0.03, ry: 0.19, rz: 0.24 }
+  ];
+
+  fascicleSpecs.forEach(({ y, z, ry, rz }, i) => {
+    const fascicle = new THREE.Mesh(new THREE.CircleGeometry(1, 40), fascicleMat);
+    fascicle.scale.set(ry, rz, 1);
+    fascicle.position.set(endX + 0.006, y, z);
+    fascicle.rotation.y = Math.PI / 2;
+    group.add(fascicle);
+
+    const fascicleOutline = new THREE.Mesh(
+      new THREE.RingGeometry(0.96, 1.05, 40),
+      dividerMat.clone()
+    );
+    fascicleOutline.scale.set(ry, rz, 1);
+    fascicleOutline.position.set(endX + 0.01, y, z);
+    fascicleOutline.rotation.y = Math.PI / 2;
+    fascicleOutline.material.opacity = sick ? 0.34 : 0.62;
+    group.add(fascicleOutline);
+
+    for (let s = 0; s < (sick ? 7 : 10); s++) {
+      const strand = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.005, 0.005, length * 0.94, 6),
+        new THREE.MeshBasicMaterial({
+          color: i % 2 === 0 ? 0xff97b4 : 0xff6f9b,
+          transparent: true,
+          opacity: sick ? 0.16 : 0.24
+        })
+      );
+      strand.rotation.z = Math.PI / 2;
+      strand.position.set(
+        0,
+        y + (s / Math.max(1, (sick ? 6 : 9)) - 0.5) * ry * 1.15,
+        z + Math.sin(s * 1.7 + i) * rz * 0.18
+      );
+      group.add(strand);
+    }
+  });
+
+  const dividerCurves = [
+    [[endX + 0.014, 0.03, 0.06], [endX + 0.014, 0.22, 0.23], [endX + 0.014, 0.52, 0.62]],
+    [[endX + 0.014, -0.05, 0.02], [endX + 0.014, -0.25, 0.22], [endX + 0.014, -0.56, 0.57]],
+    [[endX + 0.014, 0.02, -0.06], [endX + 0.014, 0.03, -0.28], [endX + 0.014, 0.04, -0.76]],
+    [[endX + 0.014, -0.06, -0.02], [endX + 0.014, -0.31, -0.02], [endX + 0.014, -0.71, -0.04]],
+    [[endX + 0.014, 0.06, -0.02], [endX + 0.014, 0.35, -0.03], [endX + 0.014, 0.74, -0.05]]
+  ];
+  dividerCurves.forEach(points => {
+    const curve = new THREE.CatmullRomCurve3(points.map(([x, y, z]) => new THREE.Vector3(x, y, z)));
+    const divider = new THREE.Mesh(
+      new THREE.TubeGeometry(curve, 20, sick ? 0.016 : 0.02, 8, false),
+      dividerMat
+    );
+    group.add(divider);
+  });
+
+  const outerShell = new THREE.Mesh(
+    new THREE.CylinderGeometry(radius * 1.05, radius * 1.05, length * 1.01, 72, 1, true),
+    new THREE.MeshBasicMaterial({
+      color: sheathColor,
+      wireframe: true,
+      transparent: true,
+      opacity: sick ? 0.1 : 0.14
+    })
+  );
+  outerShell.rotation.z = Math.PI / 2;
+  group.add(outerShell);
+
+  const aura = new THREE.Mesh(
+    new THREE.CylinderGeometry(radius * 1.14, radius * 1.14, length * 0.98, 72, 1, true),
+    new THREE.MeshBasicMaterial({
+      color: 0x32eaff,
+      transparent: true,
+      opacity: sick ? 0.05 : 0.08,
+      side: THREE.BackSide
+    })
+  );
+  aura.rotation.z = Math.PI / 2;
+  group.add(aura);
+
+  group.rotation.y = sick ? -0.18 : -0.12;
+  group.rotation.z = sick ? -0.08 : -0.04;
   return group;
 }
 
@@ -875,7 +1031,7 @@ function initSlide6() {
   container.style.cssText='position:absolute;right:3%;top:50%;transform:translateY(-50%);width:46%;height:72%;z-index:5;pointer-events:none;';
   document.getElementById('s6').appendChild(container);
 
-  const {renderer,scene,camera}=makeScene(container,{fov:42,cam:[0,0,4.5]});
+  const {renderer,scene,camera}=makeScene(container,{fov:36,cam:[0.9,0.15,5.4]});
 
   let showing='healthy';
   const healthy=buildFiber(false); healthy.position.x=0;
@@ -883,13 +1039,17 @@ function initSlide6() {
   scene.add(healthy); scene.add(sick);
 
   // Swap timer
+  healthy.position.x = 0.08;
+  sick.position.x = 0.08;
+
   let t=0, swap=0;
   function loop(){
     requestAnimationFrame(loop);
     t+=.015; swap+=.015;
     if(swap>6){swap=0;showing=showing==='healthy'?'sick':'healthy';healthy.visible=showing==='healthy';sick.visible=showing==='sick';}
     const active=showing==='healthy'?healthy:sick;
-    active.rotation.y=t*.3; active.rotation.x=Math.sin(t*.3)*.1;
+    active.rotation.y = 0.65 + Math.sin(t * 0.45) * 0.08;
+    active.rotation.x = -0.18 + Math.sin(t * 0.3) * 0.03;
     renderer.render(scene,camera);
   }
   loop();

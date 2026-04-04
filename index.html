@@ -206,7 +206,61 @@ body:hover #cursor { background:rgba(0,240,255,.15); }
   box-shadow:var(--glow-c);
   animation: fadeUp .6s .6s both;
 }
+.hero-team {
+  margin-top:26px;
+  margin-left:auto;
+  max-width:560px;
+  display:grid;
+  gap:10px;
+  padding:18px 22px;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:18px;
+  background:rgba(3,7,15,.55);
+  backdrop-filter:blur(10px);
+  animation: fadeUp .6s .8s both;
+}
+.hero-team-title {
+  font-family:'Share Tech Mono',monospace;
+  font-size:10px;
+  letter-spacing:4px;
+  color:rgba(0,240,255,.75);
+  text-transform:uppercase;
+}
+.hero-team-grid {
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0, 1fr));
+  gap:8px 20px;
+}
+.hero-team-member {
+  font-size:14px;
+  line-height:1.5;
+  color:rgba(255,255,255,.82);
+}
+.hero-team-member span {
+  color:var(--cyan);
+  font-family:'Share Tech Mono',monospace;
+  font-size:12px;
+  letter-spacing:1px;
+}
 @keyframes fadeUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:none} }
+
+@media (max-width: 900px) {
+  #s1 {
+    justify-content:center;
+    padding:110px 24px 60px;
+  }
+  #s1 .hero-block {
+    max-width:100%;
+    padding-right:0;
+    text-align:center;
+  }
+  .hero-team {
+    margin-right:auto;
+  }
+  .hero-team-grid {
+    grid-template-columns:1fr;
+  }
+}
 
 /* S2 — INTRO */
 #s2 .right-block {
@@ -584,9 +638,22 @@ body:hover #cursor { background:rgba(0,240,255,.15); }
   </div>
   <!-- 3D MODEL renders here via Three.js in left 55% -->
   <div class="hero-block">
-    <div class="hero-eyebrow">HUMAN HEALTH SYSTEMS — 2025</div>
-    <h1 class="hero-h1">THE<br>FUTURE<br><span>OF MUSCLES</span></h1>
+    <div class="hero-eyebrow">HUMAN HEALTH SYSTEMS PRESENTATION</div>
+    <h1 class="hero-h1">THE FUTURE<br><span>OF MUSCLES</span></h1>
     <div class="hero-pill">FROM HUMAN BIOLOGY TO ARTIFICIAL MUSCLES</div>
+    <div class="hero-team">
+      <div class="hero-team-title">Presented By</div>
+      <div class="hero-team-grid">
+        <div class="hero-team-member">Royce Dcunha <span>11011</span></div>
+        <div class="hero-team-member">Mathwel Dbritto <span>11010</span></div>
+        <div class="hero-team-member">Aaron Dodti <span>11013</span></div>
+        <div class="hero-team-member">Owen Falcao <span>11017</span></div>
+        <div class="hero-team-member">Caris Lus <span>11036</span></div>
+        <div class="hero-team-member">Ben Pereira <span>11049</span></div>
+        <div class="hero-team-member">Griffin Ver <span>11060</span></div>
+        <div class="hero-team-member">Myron Murzello <span>11043</span></div>
+      </div>
+    </div>
   </div>
 </div>
 

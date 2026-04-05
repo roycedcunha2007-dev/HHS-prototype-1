@@ -844,10 +844,10 @@ function initSlide2() {
   let t=0, scanY=-2;
   function loop(){
     requestAnimationFrame(loop);
-    t+=.01; scanY+=.04; if(scanY>2.5) scanY=-2;
+    t+=.016; scanY+=.04; if(scanY>2.5) scanY=-2;
     if (body) {
-      body.rotation.y = -0.35 + t * 0.12 + Math.sin(t * 0.35) * 0.12;
-      body.rotation.x = Math.sin(t * 0.2) * 0.03;
+      body.rotation.y = -0.35 + t * 0.18 + Math.sin(t * 0.5) * 0.12;
+      body.rotation.x = Math.sin(t * 0.28) * 0.03;
     }
     scan.position.y=scanY; scan.rotation.x=Math.PI/2;
     renderer.render(scene,camera);
@@ -1184,22 +1184,22 @@ function initSlide9() {
       wrap:'pros-wrap',
       path:'arm1.glb',
       fallback:buildProsthetic,
-      cam:[0,-.2,4.2],
+      cam:[0.18,-0.1,5.35],
       model:{
-        height:2.8,
-        position:[0,-0.45,0],
-        rotation:[0,-0.35,0]
+        height:2.45,
+        position:[0.08,-0.22,0],
+        rotation:[-0.04,-0.92,0]
       }
     },
     {
       wrap:'exo-wrap',
       path:'arm2.glb',
       fallback:buildScaffold,
-      cam:[0,-0.1,4.2],
+      cam:[0.15,-0.06,5.35],
       model:{
-        height:2.8,
-        position:[0,-0.35,0],
-        rotation:[0,0.35,0]
+        height:2.45,
+        position:[0.05,-0.16,0],
+        rotation:[-0.05,-0.98,0]
       }
     }
   ].forEach(({wrap,path,fallback,cam,model})=>{
@@ -1229,8 +1229,10 @@ function initSlide9() {
       requestAnimationFrame(loop);
       t+=.015;
       if(mesh){
-        mesh.rotation.y += 0.01;
-        mesh.rotation.x = (model.rotation[0] || 0) + Math.sin(t*.25)*.08;
+        mesh.rotation.y = model.rotation[1] + Math.sin(t * 0.42) * 0.02;
+        mesh.rotation.x = (model.rotation[0] || 0) + Math.sin(t * 0.3) * 0.014;
+        mesh.position.y = model.position[1] + Math.sin(t * 0.7) * 0.035;
+        mesh.position.x = model.position[0] + Math.sin(t * 0.55) * 0.05;
       }
       renderer.render(scene,camera);
     }

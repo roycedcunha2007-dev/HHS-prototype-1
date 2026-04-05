@@ -1179,16 +1179,59 @@ function initSlide8() {
 
 function initSlide9() {
   if(scenes[8])return;
-  [{wrap:'pros-wrap',build:buildProsthetic,cam:[0,-.3,4]},{wrap:'exo-wrap',build:buildScaffold,cam:[0,0,4.5]}].forEach(({wrap,build,cam})=>{
+  [
+    {
+      wrap:'pros-wrap',
+      path:'arm1.glb',
+      fallback:buildProsthetic,
+      cam:[0,-.2,4.2],
+      model:{
+        height:2.8,
+        position:[0,-0.45,0],
+        rotation:[0,-0.35,0]
+      }
+    },
+    {
+      wrap:'exo-wrap',
+      path:'arm2.glb',
+      fallback:buildScaffold,
+      cam:[0,-0.1,4.2],
+      model:{
+        height:2.8,
+        position:[0,-0.35,0],
+        rotation:[0,0.35,0]
+      }
+    }
+  ].forEach(({wrap,path,fallback,cam,model})=>{
     const container=document.getElementById(wrap);
     if(!container)return;
     const {renderer,scene,camera}=makeScene(container,{fov:44,cam});
-    const mesh=build();
-    scene.add(mesh);
+    let mesh=null;
+
+    const useFallback=()=>{
+      if(mesh)return;
+      mesh=fallback();
+      scene.add(mesh);
+    };
+
+    loadGLB(
+      scene,
+      path,
+      glbModel => {
+        mesh=createAnatomyModelRoot(glbModel, model);
+        scene.add(mesh);
+      },
+      useFallback
+    );
+
     let t=0;
     function loop(){
       requestAnimationFrame(loop);
-      t+=.015; mesh.rotation.y=Math.sin(t*.4)*.4; mesh.rotation.x=Math.sin(t*.25)*.08;
+      t+=.015;
+      if(mesh){
+        mesh.rotation.y += 0.01;
+        mesh.rotation.x = (model.rotation[0] || 0) + Math.sin(t*.25)*.08;
+      }
       renderer.render(scene,camera);
     }
     loop();

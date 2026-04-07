@@ -753,6 +753,23 @@ function initSlide1() {
     scene,
     'humanmuscles.glb',
     model => {
+      model.traverse(node => {
+        if (!node.isMesh || !node.material) return;
+        const applyMuscleLook = material => {
+          const next = material.clone();
+          next.color = new THREE.Color(0xcc3355);
+          next.emissive = new THREE.Color(0x220011);
+          next.emissiveIntensity = 0.24;
+          next.roughness = 0.48;
+          next.metalness = 0.04;
+          next.clearcoat = 0.22;
+          next.clearcoatRoughness = 0.4;
+          return next;
+        };
+        node.material = Array.isArray(node.material)
+          ? node.material.map(applyMuscleLook)
+          : applyMuscleLook(node.material);
+      });
       body = createAnatomyModelRoot(model, {
         height: 5.3,
         position: [-0.2, -0.25, 0],

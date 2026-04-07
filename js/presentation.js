@@ -742,8 +742,26 @@ function initSlide1() {
   document.getElementById('s1').appendChild(container);
 
   const { renderer, scene, camera } = makeScene(container, { fov:40, cam:[0,1.5,7] });
-  const body = buildProceduralBody(scene);
-  scene.add(body);
+  let body = null;
+  const useFallbackBody = () => {
+    if (body) return;
+    body = buildProceduralBody(scene);
+    scene.add(body);
+  };
+
+  loadGLB(
+    scene,
+    'humanmuscles.glb',
+    model => {
+      body = createAnatomyModelRoot(model, {
+        height: 5.3,
+        position: [-0.2, -0.25, 0],
+        rotation: [0, -0.18, 0]
+      });
+      scene.add(body);
+    },
+    useFallbackBody
+  );
 
   // Holographic edge lines on body
   const edgeMat = new THREE.MeshBasicMaterial({color:0x00f0ff,wireframe:true,transparent:true,opacity:.04});
@@ -779,8 +797,10 @@ function initSlide1() {
   function loop(){
     requestAnimationFrame(loop);
     t+=.008;
-    body.rotation.y=Math.sin(t*.4)*.15;
-    body.position.y=Math.sin(t*.3)*.04;
+    if (body) {
+      body.rotation.y = -0.18 + Math.sin(t * 0.4) * 0.15;
+      body.position.y = -0.25 + Math.sin(t * 0.3) * 0.04;
+    }
     rings.forEach(r=>{r.rotation.x=t*r.userData.speed;r.rotation.y=t*r.userData.speed*.7+r.userData.offset;});
     edgeMesh.rotation.y=t*.05;
     // Particles drift
@@ -896,7 +916,7 @@ function initSlide3() {
       g.add(wrap);
       return g;
     }, cam:[0,0,3.5], rot:-.007},
-    { id:'cardiac-viewer', build:()=>{
+    { id:'cardiac-viewer', path:'realistic_human_heart.glb', fallback:()=>{
       const g=new THREE.Group();
       // Heart-like branched fibers
       const mat=new THREE.MeshPhysicalMaterial({color:0xcc1133,emissive:0x440011,emissiveIntensity:.5,roughness:.35});
@@ -921,20 +941,57 @@ function initSlide3() {
         new THREE.MeshBasicMaterial({color:0xff2070,transparent:true,opacity:.08,side:THREE.BackSide}));
       g.add(glow);
       return g;
-    }, cam:[0,0,3.2], rot:.01, pulseGlow:true},
+    }, cam:[0,0.1,3.8], rot:.006, pulseGlow:true, model:{
+      height: 2.4,
+      position: [0, -0.05, 0],
+      rotation: [0.18, -0.35, 0]
+    }},
   ];
 
-  configs.forEach(({id,build,cam,rot,pulseGlow})=>{
+  configs.forEach(({id,build,fallback,path,cam,rot,pulseGlow,model})=>{
     const container=document.getElementById(id);
     if(!container)return;
     const {renderer,scene,camera}=makeScene(container,{fov:42,cam});
-    const mesh=build();
-    scene.add(mesh);
+    let mesh = null;
+    const createFallback = fallback || build;
+    const useFallback = () => {
+      if (mesh) return;
+      mesh = createFallback();
+      scene.add(mesh);
+    };
+
+    if (path) {
+      loadGLB(
+        scene,
+        path,
+        glbModel => {
+          mesh = createAnatomyModelRoot(glbModel, model || {
+            height: 2.2,
+            position: [0, 0, 0],
+            rotation: [0, 0, 0]
+          });
+          scene.add(mesh);
+        },
+        useFallback
+      );
+    } else {
+      mesh = build();
+      scene.add(mesh);
+    }
+
     let t=0;
     function loop(){
       requestAnimationFrame(loop);
-      t+=.016; mesh.rotation.y+=rot; mesh.rotation.x=Math.sin(t*.5)*.06;
-      if(pulseGlow){const g=mesh.children[mesh.children.length-1];if(g&&g.material)g.material.opacity=.05+Math.sin(t*2)*.05;}
+      t+=.016;
+      if(mesh){
+        mesh.rotation.y += rot;
+        mesh.rotation.x = (model?.rotation?.[0] || 0) + Math.sin(t*.5)*.06;
+        mesh.position.y = (model?.position?.[1] || 0) + Math.sin(t * 1.2) * (path ? 0.035 : 0);
+      }
+      if(pulseGlow && mesh){
+        const g=mesh.children[mesh.children.length-1];
+        if(g&&g.material)g.material.opacity=.05+Math.sin(t*2)*.05;
+      }
       renderer.render(scene,camera);
     }
     loop();

@@ -222,6 +222,38 @@ function createAnatomyModelRoot(model, options = {}) {
   return root;
 }
 
+function tintModelMaterials(root, options = {}) {
+  const {
+    color = 0x9eefff,
+    emissive = 0x1edfff,
+    opacity = 0.9
+  } = options;
+
+  root.traverse(node => {
+    if (!node.isMesh || !node.material) return;
+
+    const stylize = material => {
+      const next = material.clone();
+      next.color = new THREE.Color(color);
+      next.emissive = new THREE.Color(emissive);
+      next.emissiveIntensity = 0.45;
+      next.transparent = true;
+      next.opacity = opacity;
+      next.roughness = 0.14;
+      next.metalness = 0.72;
+      next.clearcoat = 0.9;
+      next.clearcoatRoughness = 0.12;
+      if ('transmission' in next) next.transmission = 0.14;
+      if ('thickness' in next) next.thickness = 0.35;
+      return next;
+    };
+
+    node.material = Array.isArray(node.material)
+      ? node.material.map(stylize)
+      : stylize(node.material);
+  });
+}
+
 // ═══════════════════════════════════════════════════════
 // PROCEDURAL MODELS (beautiful fallbacks + supplements)
 // ═══════════════════════════════════════════════════════
@@ -741,7 +773,7 @@ function initSlide1() {
   container.style.cssText = 'position:absolute;left:0;top:0;width:55%;height:100%;z-index:5;pointer-events:none;';
   document.getElementById('s1').appendChild(container);
 
-  const { renderer, scene, camera } = makeScene(container, { fov:40, cam:[0,1.5,7] });
+  const { renderer, scene, camera } = makeScene(container, { fov:40, cam:[0,2.05,7.6] });
   let body = null;
   const useFallbackBody = () => {
     if (body) return;
@@ -771,8 +803,8 @@ function initSlide1() {
           : applyMuscleLook(node.material);
       });
       body = createAnatomyModelRoot(model, {
-        height: 5.3,
-        position: [-0.2, -0.25, 0],
+        height: 4.75,
+        position: [-0.12, 0.62, 0],
         rotation: [0, -0.18, 0]
       });
       scene.add(body);
@@ -816,7 +848,7 @@ function initSlide1() {
     t+=.008;
     if (body) {
       body.rotation.y = -0.18 + Math.sin(t * 0.4) * 0.15;
-      body.position.y = -0.25 + Math.sin(t * 0.3) * 0.04;
+      body.position.y = 0.62 + Math.sin(t * 0.3) * 0.03;
     }
     rings.forEach(r=>{r.rotation.x=t*r.userData.speed;r.rotation.y=t*r.userData.speed*.7+r.userData.offset;});
     edgeMesh.rotation.y=t*.05;
@@ -1258,6 +1290,7 @@ function initSlide9() {
       wrap:'pros-wrap',
       path:'arm1.glb',
       fallback:buildProsthetic,
+      tint:{ color:0x97ecff, emissive:0x16e3ff, opacity:0.88 },
       cam:[0.18,-0.1,5.35],
       model:{
         height:2.45,
@@ -1269,6 +1302,7 @@ function initSlide9() {
       wrap:'exo-wrap',
       path:'arm2.glb',
       fallback:buildScaffold,
+      tint:{ color:0x8fe8ff, emissive:0x22d8ff, opacity:0.86 },
       cam:[0.15,-0.06,5.35],
       model:{
         height:2.45,
@@ -1276,7 +1310,7 @@ function initSlide9() {
         rotation:[-0.05,-0.98,0]
       }
     }
-  ].forEach(({wrap,path,fallback,cam,model})=>{
+  ].forEach(({wrap,path,fallback,tint,cam,model})=>{
     const container=document.getElementById(wrap);
     if(!container)return;
     const {renderer,scene,camera}=makeScene(container,{fov:44,cam});
@@ -1285,6 +1319,7 @@ function initSlide9() {
     const useFallback=()=>{
       if(mesh)return;
       mesh=fallback();
+      tintModelMaterials(mesh, tint);
       scene.add(mesh);
     };
 
@@ -1293,6 +1328,7 @@ function initSlide9() {
       path,
       glbModel => {
         mesh=createAnatomyModelRoot(glbModel, model);
+        tintModelMaterials(mesh, tint);
         scene.add(mesh);
       },
       useFallback
